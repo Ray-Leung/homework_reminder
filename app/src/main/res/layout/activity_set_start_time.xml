@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.teamone.ray.homeworkreminder.SetMessage"
+    android:background="#c8ced1"
+    android:gravity="center_horizontal">
+
+    <NumberPicker
+        android:layout_width="100dp"
+        android:layout_height="150dp"
+        android:id="@+id/month"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@+id/day"
+        android:layout_marginTop="60dp" />
+
+    <NumberPicker
+        android:layout_width="100dp"
+        android:layout_height="150dp"
+        android:id="@+id/day"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/month"
+        android:layout_centerHorizontal="true" />
+
+    <NumberPicker
+        android:layout_width="100dp"
+        android:layout_height="150dp"
+        android:id="@+id/year"
+        android:layout_above="@+id/textView"
+        android:layout_toEndOf="@+id/day" />
+
+    <Button
+        style="?metaButtonBarButtonStyle"
+        android:id="@+id/button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Done"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:text="Set your start date here"
+        android:id="@+id/txt1"
+        android:layout_alignStart="@+id/month"
+        android:layout_alignParentTop="true"
+        android:textSize="26dp"
+        android:textStyle="bold"
+        android:gravity="bottom|center_horizontal"
+        android:layout_above="@+id/day"
+        android:layout_alignEnd="@+id/year" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:text="Set your start time here"
+        android:id="@+id/textView"
+        android:textSize="25dp"
+        android:gravity="bottom|center_horizontal"
+        android:layout_below="@+id/month"
+        android:layout_centerHorizontal="true" />
+
+    <NumberPicker
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/hour"
+        android:layout_below="@+id/textView"
+        android:layout_alignStart="@+id/textView" />
+
+    <Space
+        android:layout_width="94dp"
+        android:layout_height="20px"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/textView"
+        android:id="@+id/space" />
+
+    <NumberPicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/minute"
+        android:layout_below="@+id/textView"
+        android:layout_alignEnd="@+id/textView"
+        android:layout_toEndOf="@+id/hour" />
+
+</RelativeLayout>
