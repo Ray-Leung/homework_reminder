@@ -80,6 +80,8 @@ public class Alarm_Service extends IntentService {
 
                 if (compareTime(tmp) == 0) {
                     sms.sendTextMessage(myPhoneNo, null, "It is time to do " + tmp.getTxt(), null, null);
+                    Toast toast = Toast.makeText(this.getApplicationContext(), "SMS sent", Toast.LENGTH_SHORT);
+                    toast.show();
                     items.remove(tmp);
                 } else if (compareTime(tmp) < 0) {
                     items.remove(tmp);
@@ -150,16 +152,17 @@ public class Alarm_Service extends IntentService {
         super.onCreate();
         Log.d(LOG_TAG, "Service Created.");
         int duration = Toast.LENGTH_SHORT;
-        Toast toast = Toast.makeText(this.getApplicationContext(),"Service created.", duration);
+        Toast toast = Toast.makeText(this.getApplicationContext(),"SMS Service created.", duration);
         toast.show();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+
         Log.d(LOG_TAG, "Service Destroyed.");
         int duration = Toast.LENGTH_SHORT;
-        Toast toast = Toast.makeText(this.getApplicationContext(),"Service destroyed.", duration);
+        Toast toast = Toast.makeText(this.getApplicationContext(),"SMS Service destroyed.", duration);
         toast.show();
 
     }

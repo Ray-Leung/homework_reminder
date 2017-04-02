@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.icu.text.IDNA;
@@ -11,24 +12,33 @@ import android.os.Parcelable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+
 
 
 /**
@@ -37,12 +47,24 @@ import java.util.List;
  */
 public class HomeActivity extends AppCompatActivity {
 
+    private final static int PERMISSION_REQUEST_CODE = 1;
+    private final static int ITEM_DATA_RESULT = 3;
+    private final static int PLACE_DATA_REQUEST = 1;
+    private final static int ITEM_MODIFY_REQUEST = 2;
+    private final static int ITEM_DATA_REQUEST = 1;
+    private final static int TIME_LIMIT = 1500;
+    private static long timeBackPressed;
+    private LatLng lng;
     final ArrayList<Items> db = new ArrayList<>();
+    private static double home_longitude;
+    private static double home_latitude;
+
     ListView listView;
     CustomListAdapter cla;
 
     private static final String[] PERMISSIONS_REQUIRED = { Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.SEND_SMS };
+            Manifest.permission.SEND_SMS, Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.INTERNET };
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -145,6 +167,7 @@ public class HomeActivity extends AppCompatActivity {
 
 
         Data.read_data(this, db);
+        lng = Data.read_loc(this);
 
         listView = (ListView)findViewById(R.id.listView);
         cla = new CustomListAdapter(this, db);
@@ -156,7 +179,18 @@ public class HomeActivity extends AppCompatActivity {
                 modifyData(adapterView, view, i, l);
             }
         });
+    }
 
+    private void pickPlace(View view) {
+        PlacePicker.IntentBuilder picker = new PlacePicker.IntentBuilder();
+        try {
+            Intent intent = picker.build(this);
+            startActivityForResult(intent, PLACE_DATA_REQUEST);
+        } catch (GooglePlayServicesRepairableException e) {
+            e.printStackTrace();
+        } catch (GooglePlayServicesNotAvailableException e) {
+            e.printStackTrace();
+        }
     }
 
     private void modifyData(AdapterView<?> adapterView, View view, int i, long l) {
@@ -167,14 +201,14 @@ public class HomeActivity extends AppCompatActivity {
         Data.collectData(b, item, i);
 
         intent.putExtras(b);
-        startActivityForResult(intent, 2);
+        startActivityForResult(intent, ITEM_MODIFY_REQUEST);
 
     }
 
     private void receiveData(View view) {
         checkPermissions();
         Intent intent = new Intent(this, SetMessage.class);
-        startActivityForResult(intent, 1);
+        startActivityForResult(intent, ITEM_DATA_REQUEST);
     }
 
 
@@ -184,7 +218,7 @@ public class HomeActivity extends AppCompatActivity {
      * @param serviceClass
      * @return
      */
-    private boolean isMyServiceRunning(Class<Alarm_Service> serviceClass) {
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
 
         for (ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -211,8 +245,36 @@ public class HomeActivity extends AppCompatActivity {
             final String[] permissions = new String[missedPermissions.size()];
             missedPermissions.toArray(permissions);
 
-            ActivityCompat.requestPermissions(this, permissions, 1);
+            ActivityCompat.requestPermissions(this, permissions, PERMISSION_REQUEST_CODE);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.action_bar, menu);
+        return true;
+    }
+
+    @Override public boolean onOptionsItemSelected(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.map:
+                checkPermissions();
+                //Intent intent = new Intent(this, MapsActivity.class);
+                //startActivity(intent);
+                PlacePicker.IntentBuilder picker = new PlacePicker.IntentBuilder();
+                try {
+                    startActivityForResult(picker.build(this), PLACE_DATA_REQUEST) ;
+                    return true;
+                } catch (GooglePlayServicesRepairableException e) {
+                    e.printStackTrace();
+                } catch (GooglePlayServicesNotAvailableException e) {
+                    e.printStackTrace();
+                }
+
+        }
+        return false;
+
     }
 
     @Override
@@ -221,7 +283,7 @@ public class HomeActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         String TAG = "onRequestPermissionsResult";
-        if (requestCode == 1) {
+        if (requestCode == PERMISSION_REQUEST_CODE) {
             int i = 0;
 
             for (final int res : grantResults) {
@@ -243,9 +305,9 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == 2) {
-            Intent serv = new Intent(this, Alarm_Service.class);
-            if (requestCode == 1) {
+        if (resultCode == ITEM_DATA_RESULT) {
+            //Intent serv = new Intent(this, Alarm_Service.class);
+            if (requestCode == ITEM_DATA_REQUEST) {
                 Bundle b = data.getExtras();
                 db.add(new Items(b.getInt("d_m"), b.getInt("d_d"), b.getInt("d_y"),
                         b.getInt("d_h"), b.getInt("d_minu"), b.getString("msg"),
@@ -254,13 +316,9 @@ public class HomeActivity extends AppCompatActivity {
                 cla.notifyDataSetChanged();
                 Data.save(this ,db);
 
-            } else if (requestCode == 2) {
+            } else if (requestCode == ITEM_MODIFY_REQUEST) {
                 Bundle b = data.getExtras();
-                if (db.size() == 1) {
-                    serv.setAction("CREATE");
-                } else {
-                    serv.setAction("RESTART");
-                }
+
                 db.get(b.getInt("pos")).modify(b.getInt("d_m"), b.getInt("d_d"), b.getInt("d_y"),
                         b.getInt("d_h"), b.getInt("d_minu"), b.getString("msg"),
                         b.getInt("s_m"), b.getInt("s_d"), b.getInt("s_y"),
@@ -269,17 +327,45 @@ public class HomeActivity extends AppCompatActivity {
                 cla.notifyDataSetChanged();
                 Data.save(this ,db);
             }
-            serv.setAction("CREATE");
-            serv.putParcelableArrayListExtra("items", db);
 
+        } else if(resultCode == RESULT_OK) {
+            if (requestCode == PLACE_DATA_REQUEST) {
+                Place place = PlacePicker.getPlace(this, data);
+                lng = place.getLatLng();
+                Data.save_home(this, lng);
+                home_longitude = lng.longitude;
+                home_latitude = lng.latitude;
+                String address = place.getAddress().toString();
+
+                Log.d("Place call back", address);
+                Log.d("Position call back", Double.toString(home_latitude) + " , " +
+                        Double.toString(home_longitude));
+
+                Intent serv = new Intent(this, GPS_Service.class);
+                serv.putExtra("place", lng);
+                serv.setAction("CREATE");
                 if (!isMyServiceRunning(Alarm_Service.class))
                     startService(serv);
                 else {
                     stopService(serv);
                     startService(serv);
                 }
+
+            }
         }
 
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        if (TIME_LIMIT + timeBackPressed > System.currentTimeMillis()) {
+            super.onBackPressed();
+        } else {
+            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+            show();
+        }
+        timeBackPressed = System.currentTimeMillis();
     }
 
     @Override
@@ -289,7 +375,7 @@ public class HomeActivity extends AppCompatActivity {
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
         // are available.
-        delayedHide(100);
+        delayedHide(3500);
     }
 
     private void toggle() {
@@ -345,6 +431,30 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         @Override
+        public void notifyDataSetChanged() {
+            super.notifyDataSetChanged();
+            Intent serv = new Intent(HomeActivity.this, Alarm_Service.class);
+            serv.setAction("CREATE");
+            serv.putParcelableArrayListExtra("items", db);
+            if (!isMyServiceRunning(Alarm_Service.class))
+                startService(serv);
+            else {
+                stopService(serv);
+                startService(serv);
+            }
+
+            Intent gps = new Intent(HomeActivity.this, GPS_Service.class);
+            serv.putExtra("place", lng);
+            serv.setAction("CREATE");
+            if (!isMyServiceRunning(Alarm_Service.class))
+                startService(gps);
+            else {
+                stopService(gps);
+                startService(gps);
+            }
+        }
+
+        @Override
         public int getCount() {
             return listData.size();
         }
@@ -359,13 +469,15 @@ public class HomeActivity extends AppCompatActivity {
             return position;
         }
 
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(final int position, View convertView, ViewGroup parent) {
             ViewHolder holder;
             if (convertView == null) {
                 convertView = layoutInflater.inflate(R.layout.list_section_layout, null);
                 holder = new ViewHolder();
                 holder.dueView = (TextView) convertView.findViewById(R.id.due);
                 holder.txtView = (TextView) convertView.findViewById(R.id.txt);
+                holder.delButton = (Button) convertView.findViewById(R.id.button);
+
                 convertView.setTag(holder);
             } else {
                 holder = (ViewHolder) convertView.getTag();
@@ -389,12 +501,40 @@ public class HomeActivity extends AppCompatActivity {
             }
 
             holder.txtView.setText(d_t);
+            //holder.delButton.setTag(position);
+            holder.delButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog adl = new AlertDialog.Builder(HomeActivity.this)
+                            .setTitle("Delete entry")
+                            .setMessage("Are you sure you want to delete this reminder?")
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // continue with delete
+
+                                    db.remove(position);
+                                    notifyDataSetChanged();
+                                    Data.save(HomeActivity.this, db);
+
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // do nothing
+                                }
+                            })
+                            .setIcon(android.R.drawable.ic_menu_delete)
+                            .show();
+                }
+            });
+
             return convertView;
         }
 
         private class ViewHolder {
             TextView txtView;
             TextView dueView;
+            Button delButton;
         }
     }
 }

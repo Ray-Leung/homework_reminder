@@ -144,7 +144,7 @@ public class SetMessage extends AppCompatActivity {
                 b.putInt("s_minu", bundle.getInt("s_minu"));
                 intent.putExtras(b);
 
-                setResult(2, intent);
+                setResult(3, intent);
                 finish();
             }
         }

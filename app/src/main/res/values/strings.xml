@@ -7,4 +7,6 @@
     <string name="month">Month</string>
     <string name="Month">Month</string>
     <string name="Leave_Your_Message">Leave Your Message</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="google_maps_key">AIzaSyCMoTxAb4OE3xlLDVIU0ypvtKsTziODmdk</string>
 </resources>

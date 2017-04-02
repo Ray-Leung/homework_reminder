@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
@@ -58,6 +60,42 @@ public class Data {
 
     }
 
+    public static LatLng read_loc(Activity activity)  {
+        String FILENAME = "loc.dat";
+        Context context = activity.getApplicationContext();
+        LatLng latLng = null;
+        try {
+            FileInputStream fis = context.openFileInput(FILENAME);
+            String line;
+            if (fis != null) {
+                InputStreamReader isr = new InputStreamReader(fis);
+                BufferedReader bf = new BufferedReader(isr);
+                while ((line = bf.readLine()) != null) {
+                    String[] strs = line.split(" ");
+                    double latitude = Double.parseDouble(strs[0]);
+                    double longitude = Double.parseDouble(strs[1]);
+                    latLng = new LatLng(latitude, longitude);
+                }
+            }
+            fis.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return latLng;
+    }
+
+    public static void save_home(Activity activity, LatLng latLng) {
+        String filename = "loc.dat";
+        Context context = activity.getApplicationContext();
+        try(OutputStreamWriter bw = new OutputStreamWriter(context.openFileOutput(filename,
+                Context.MODE_PRIVATE))) {
+            String res = Double.toString(latLng.latitude) + " " + Double.toString(latLng.longitude);
+            bw.write(res);
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static String buildString(ArrayList<Items> db) {
         String res = "";
