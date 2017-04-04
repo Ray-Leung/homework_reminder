@@ -7,10 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.icu.text.IDNA;
-import android.os.Parcelable;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -39,6 +36,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 
+import static com.teamone.ray.homeworkreminder.Data.db;
 
 
 /**
@@ -55,7 +53,7 @@ public class HomeActivity extends AppCompatActivity {
     private final static int TIME_LIMIT = 1500;
     private static long timeBackPressed;
     private LatLng lng;
-    final ArrayList<Items> db = new ArrayList<>();
+    //final ArrayList<Items> db = new ArrayList<>();
     private static double home_longitude;
     private static double home_latitude;
 
@@ -64,7 +62,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private static final String[] PERMISSIONS_REQUIRED = { Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.SEND_SMS, Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.INTERNET };
+            Manifest.permission.ACCESS_NETWORK_STATE };
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -179,6 +177,12 @@ public class HomeActivity extends AppCompatActivity {
                 modifyData(adapterView, view, i, l);
             }
         });
+        if (lng != null)
+            Log.d("Home Location", lng.toString());
+        checkPermissions();
+        if (db.size() == 1) {
+            cla.notifyDataSetChanged();
+        }
     }
 
     private void pickPlace(View view) {
@@ -332,6 +336,8 @@ public class HomeActivity extends AppCompatActivity {
             if (requestCode == PLACE_DATA_REQUEST) {
                 Place place = PlacePicker.getPlace(this, data);
                 lng = place.getLatLng();
+                if (lng != null)
+                    Log.d("Home Location", lng.toString());
                 Data.save_home(this, lng);
                 home_longitude = lng.longitude;
                 home_latitude = lng.latitude;
@@ -341,15 +347,7 @@ public class HomeActivity extends AppCompatActivity {
                 Log.d("Position call back", Double.toString(home_latitude) + " , " +
                         Double.toString(home_longitude));
 
-                Intent serv = new Intent(this, GPS_Service.class);
-                serv.putExtra("place", lng);
-                serv.setAction("CREATE");
-                if (!isMyServiceRunning(Alarm_Service.class))
-                    startService(serv);
-                else {
-                    stopService(serv);
-                    startService(serv);
-                }
+                cla.notifyDataSetChanged();
 
             }
         }
@@ -435,22 +433,13 @@ public class HomeActivity extends AppCompatActivity {
             super.notifyDataSetChanged();
             Intent serv = new Intent(HomeActivity.this, Alarm_Service.class);
             serv.setAction("CREATE");
-            serv.putParcelableArrayListExtra("items", db);
+            //serv.putParcelableArrayListExtra("items", db);
+            serv.putExtra("place", lng);
             if (!isMyServiceRunning(Alarm_Service.class))
                 startService(serv);
             else {
                 stopService(serv);
                 startService(serv);
-            }
-
-            Intent gps = new Intent(HomeActivity.this, GPS_Service.class);
-            serv.putExtra("place", lng);
-            serv.setAction("CREATE");
-            if (!isMyServiceRunning(Alarm_Service.class))
-                startService(gps);
-            else {
-                stopService(gps);
-                startService(gps);
             }
         }
 

@@ -3,14 +3,6 @@ package com.teamone.ray.homeworkreminder;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.StringTokenizer;
-
 /**
  * Created by ray on 3/23/2017.
  */
@@ -32,6 +24,8 @@ public class Items implements Parcelable{
     private int s_y = 0;
     private int s_minu = 0;
     private int s_h = 0;
+    private boolean s_sent = false;
+    private boolean d_sent =false;
 
     public Items() {
         due_date = "";
@@ -125,6 +119,8 @@ public class Items implements Parcelable{
 
     public void modify(int m, int d, int y, int hr, int min, String txt,
                        int s_m, int s_d, int s_y, int s_hr, int s_min) {
+        d_sent = false;
+        s_sent = false;
         due_date = Months.months[m - 1] + " " + String.valueOf(d) + " " + String.valueOf(y);
         String tmp = min > 10? String.valueOf(min) : "0" +
                 String.valueOf(min);
@@ -182,6 +178,22 @@ public class Items implements Parcelable{
     public int getS_h() { return s_h; }
 
     public String getTxt() { return this.txt; }
+
+    public void setS_Sent() {
+        if (s_sent == false) s_sent = true;
+    }
+
+    public void resetS_Sent() { s_sent = false; }
+
+    public boolean getS_Sent() { return s_sent; }
+
+    public void setD_Sent() {
+        if (d_sent == false) d_sent = true;
+    }
+
+    public void resetD_Sent() { d_sent = false; }
+
+    public boolean getD_Sent() { return d_sent; }
 
     @Override
     public int describeContents() {

@@ -7,13 +7,9 @@ import android.os.Bundle;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
@@ -21,6 +17,8 @@ import java.util.ArrayList;
  * Created by ray on 3/23/2017.
  */
 public class Data {
+    public static ArrayList<Items> db = new ArrayList<>();
+
 
     public static void read_data(Activity activity,ArrayList<Items> db)  {
         String FILENAME = "db.dat";
