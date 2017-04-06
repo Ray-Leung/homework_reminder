@@ -180,7 +180,7 @@ public class HomeActivity extends AppCompatActivity {
         if (lng != null)
             Log.d("Home Location", lng.toString());
         checkPermissions();
-        if (db.size() == 1) {
+        if (db.size() > 1) {
             cla.notifyDataSetChanged();
         }
     }
