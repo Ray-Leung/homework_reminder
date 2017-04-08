@@ -8,7 +8,7 @@ import android.os.Parcelable;
  */
 
 public class Items implements Parcelable{
-    public String INI_TXT = "Click here to add your first reminder.";
+    public String INI_TXT = "Click to add first reminder.";
     private String due_date;
     private String due_time;
     private String txt;

@@ -48,11 +48,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="36dp"
-        android:text="Set your start date here"
+        android:text="Set your remind date here"
         android:id="@+id/txt1"
         android:layout_alignStart="@+id/month"
         android:layout_alignParentTop="true"
-        android:textSize="26dp"
+        android:textSize="25dp"
         android:textStyle="bold"
         android:gravity="bottom|center_horizontal"
         android:layout_above="@+id/day"
@@ -60,14 +60,14 @@
 
 
     <TextView
+        android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="50dp"
-        android:text="Set your start time here"
-        android:id="@+id/textView"
-        android:textSize="25dp"
-        android:gravity="bottom|center_horizontal"
         android:layout_below="@+id/month"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:gravity="bottom|center_horizontal"
+        android:text="Set your remind time here"
+        android:textSize="24sp" />
 
     <NumberPicker
         android:layout_width="100dp"

@@ -127,10 +127,37 @@ public class Alarm_Service extends IntentService {
         SmsManager sms = SmsManager.getDefault();
         manager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
 
+        try {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, NETWORK_LOCATION_INTERVAL,
+                    LOCATION_DISTANCE, locationListeners[1]);
+        } catch (IllegalArgumentException e) {
+            Log.d(LOG_TAG, "network provider does not exist, " + e.getMessage());
+        } catch (SecurityException e) {
+            Log.i(LOG_TAG, "fail to request location update, ignore", e);
+        }
+
+        try {
+            manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_LOCATION_INTERVAL,
+                    0, locationListeners[0]);
+        } catch (IllegalArgumentException e) {
+            Log.d(LOG_TAG, "network provider does not exist, " + e.getMessage());
+        } catch (SecurityException e) {
+            Log.i(LOG_TAG, "fail to request location update, ignore", e);
+        }
 
         timer = System.currentTimeMillis();
         //while (checkS_SentStatus(Data.db) || checkD_SentStatus(Data.db))
-        while (true) {
+        while (checkD_SentStatus(Data.db) || checkS_SentStatus(Data.db)) {
             int i = 0;
             while (i != Data.db.size()) {
                 long curTime = System.currentTimeMillis();
@@ -138,7 +165,7 @@ public class Alarm_Service extends IntentService {
                     timer = 0;
                     reset(Data.db);
                 }
-                requestLoc();
+                //requestLoc();
                 if (manager != null) {
                     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         // TODO: Consider calling
@@ -269,6 +296,27 @@ public class Alarm_Service extends IntentService {
         }
         Log.d("Sent status", Boolean.toString(dp[itemses.size()]));
         return !dp[itemses.size()];
+    }
+
+
+    private boolean compareDate(Items it) {
+        DateFormat df = new SimpleDateFormat("MM dd yyyy HH mm");
+        String date = df.format(Calendar.getInstance().getTime());
+        String[] strs = date.split(" ");
+        int mm = Integer.parseInt(strs[0]);
+        int dd = Integer.parseInt(strs[1]);
+        int yy = Integer.parseInt(strs[2]);
+        int hh = Integer.parseInt(strs[3]);
+        int min = Integer.parseInt(strs[4]);
+
+        if (yy == it.getS_y()) {
+            if (mm == it.getS_m()) {
+                if (dd == it.getS_d()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

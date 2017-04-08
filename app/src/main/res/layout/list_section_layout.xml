@@ -37,8 +37,10 @@
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
+        android:background="@android:color/white"
         android:focusable="false"
-        android:text="DELETE" />
+        android:text="DELETE"
+        android:textColor="@android:color/holo_red_dark" />
 
 
 </RelativeLayout>

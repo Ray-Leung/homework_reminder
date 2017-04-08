@@ -163,8 +163,9 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-
-        Data.read_data(this, db);
+        if (db.isEmpty()) {
+            Data.read_data(this, db);
+        }
         lng = Data.read_loc(this);
 
         listView = (ListView)findViewById(R.id.listView);
@@ -479,7 +480,6 @@ public class HomeActivity extends AppCompatActivity {
                 due = "Due:" + listData.get(position).getDue_date() + " " +
                         listData.get(position).getDue_time();
             }
-            holder.dueView.setText(due);
 
             String d_t;
 
@@ -489,7 +489,9 @@ public class HomeActivity extends AppCompatActivity {
                 d_t = listData.get(position).getTxt();
             }
 
-            holder.txtView.setText(d_t);
+            holder.txtView.setText(due);
+            holder.dueView.setText(d_t);
+
             //holder.delButton.setTag(position);
             holder.delButton.setOnClickListener(new View.OnClickListener() {
                 @Override
