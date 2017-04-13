@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.annotation.IntegerRes;
 import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.wearable.DataApi;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -50,7 +52,7 @@ public class Alarm_Service extends IntentService {
 
     private Location loc;
     private static final int NETWORK_LOCATION_INTERVAL = 2000;
-    private static final int GPS_LOCATION_INTERVAL = 20000;
+    private static final int GPS_LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = 10f;
     private static double cur_longitude;
     private static double cur_latitude;
@@ -121,12 +123,14 @@ public class Alarm_Service extends IntentService {
                 return it1.getStart_date().compareTo(it2.getStart_date());
             }
         });*/
-
+        double pre_network_longitude = Integer.MAX_VALUE;
+        double pre_network_latitude = Integer.MAX_VALUE;
+        double pre_gps_longitude = Integer.MAX_VALUE;
+        double pre_gps_latitude = Integer.MAX_VALUE;
         TelephonyManager telephonyManager = (TelephonyManager) this.getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         String myPhoneNo = telephonyManager.getLine1Number();
         SmsManager sms = SmsManager.getDefault();
-        manager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-
+        initLocationManger();
         try {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -166,32 +170,83 @@ public class Alarm_Service extends IntentService {
                     reset(Data.db);
                 }
                 //requestLoc();
-                if (manager != null) {
-                    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                        return;
+
+
+
+                //Items tmp = items.get(i);
+
+                if (checkD_SentStatus(Data.db)) {
+                    if (compareDueTime(Data.db.get(i)) > 0) {
+                        Log.d(LOG_TAG, "Item on time");
+                        if (manager != null) {
+                            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                // TODO: Consider calling
+                                //    ActivityCompat#requestPermissions
+                                // here to request the missing permissions, and then overriding
+                                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                //                                          int[] grantResults)
+                                // to handle the case where the user grants the permission. See the documentation
+                                // for ActivityCompat#requestPermissions for more details.
+                                return;
+                            }
+                            loc = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                            if (loc != null) {
+                                if (pre_network_latitude == Integer.MAX_VALUE && pre_network_longitude == Integer.MAX_VALUE) {
+                                    pre_network_latitude = loc.getLatitude();
+                                    pre_network_longitude = loc.getLongitude();
+                                }
+                                if (cur_latitude != pre_network_latitude && cur_longitude != pre_network_longitude) {
+                                    cur_latitude = loc.getLatitude();
+                                    cur_longitude = loc.getLongitude();
+                                }
+                            }
+                        }
+                        if (comparePlace(home)) {
+                            if (compareDate(Data.db.get(i))) {
+                                sms.sendTextMessage(myPhoneNo, null, "Need to finish " + items.get(i).getTxt() + " today.", null, null);
+                                Toast toast = Toast.makeText(this.getApplicationContext(), "SMS sent", Toast.LENGTH_SHORT);
+                                toast.show();
+                                //items.remove(tmp);
+                                Data.db.get(i).setS_Sent();
+                                Data.db.get(i).setD_Sent();
+                            }
+                        }
+                        if (manager != null) {
+                            loc = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            if (loc != null) {
+                                if (pre_gps_latitude == Integer.MAX_VALUE && pre_gps_longitude == Integer.MAX_VALUE) {
+                                    pre_gps_latitude = loc.getLatitude();
+                                    pre_gps_longitude = loc.getLongitude();
+                                }
+                                if (cur_latitude != pre_gps_latitude && cur_longitude != pre_gps_longitude) {
+                                    cur_latitude = loc.getLatitude();
+                                    cur_longitude = loc.getLongitude();
+                                }
+                            }
+                        }
+                        if (comparePlace(home)) {
+                            if (compareDate(Data.db.get(i))) {
+                                sms.sendTextMessage(myPhoneNo, null, "Need to finish " + items.get(i).getTxt() + " today.", null, null);
+                                Toast toast = Toast.makeText(this.getApplicationContext(), "SMS sent", Toast.LENGTH_SHORT);
+                                toast.show();
+                                //items.remove(tmp);
+                                Data.db.get(i).setS_Sent();
+                                Data.db.get(i).setD_Sent();
+                            }
+                        }
+
+                    } else if (compareDueTime(Data.db.get(i)) <= 0) {
+                        //items.remove(tmp);
+                        Log.d(LOG_TAG, "Item due");
+                        Data.db.get(i).setD_Sent();
                     }
-                    loc = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                    if (loc != null) {
-                        cur_latitude = loc.getLatitude();
-                        cur_longitude = loc.getLongitude();
+
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
                     }
                 }
 
-                if (manager != null) {
-                    loc = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (loc != null) {
-                        cur_latitude = loc.getLatitude();
-                        cur_longitude = loc.getLongitude();
-                    }
-                }
-                //Items tmp = items.get(i);
                 if (checkS_SentStatus(Data.db)) {
                     if (compareTime(Data.db.get(i)) == 0) {
                         Log.d(LOG_TAG, "Item on time");
@@ -211,61 +266,11 @@ public class Alarm_Service extends IntentService {
                     } catch (InterruptedException e) {
                     }
                 }
-                if (checkD_SentStatus(Data.db)) {
-                    if (compareDueTime(Data.db.get(i)) > 0) {
-                        Log.d(LOG_TAG, "Item on time");
-                        if (comparePlace(home)) {
-                            sms.sendTextMessage(myPhoneNo, null, "Need to finish " + items.get(i).getTxt() + " today.", null, null);
-                            Toast toast = Toast.makeText(this.getApplicationContext(), "SMS sent", Toast.LENGTH_SHORT);
-                            toast.show();
-                            //items.remove(tmp);
-                            Data.db.get(i).setD_Sent();
-                        }
-                    } else if (compareDueTime(Data.db.get(i)) <= 0) {
-                        //items.remove(tmp);
-                        Log.d(LOG_TAG, "Item due");
-                        Data.db.get(i).setD_Sent();
-                    }
-
-                    try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException e) {
-                    }
-                }
                 i++;
             }
         }
     }
 
-    private void requestLoc() {
-        try {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, NETWORK_LOCATION_INTERVAL,
-                    LOCATION_DISTANCE, locationListeners[1]);
-        } catch (IllegalArgumentException e) {
-            Log.d(LOG_TAG, "network provider does not exist, " + e.getMessage());
-        } catch (SecurityException e) {
-            Log.i(LOG_TAG, "fail to request location update, ignore", e);
-        }
-
-        try {
-            manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_LOCATION_INTERVAL,
-                    0, locationListeners[0]);
-        } catch (IllegalArgumentException e) {
-            Log.d(LOG_TAG, "network provider does not exist, " + e.getMessage());
-        } catch (SecurityException e) {
-            Log.i(LOG_TAG, "fail to request location update, ignore", e);
-        }
-    }
 
     private void reset(ArrayList<Items> db) {
         for (int i = 0; i < db.size(); i++) {

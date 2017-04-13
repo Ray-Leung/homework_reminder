@@ -6,7 +6,9 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -14,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,9 +28,14 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.targets.ActionViewTarget;
+import com.github.amlcurran.showcaseview.targets.Target;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.location.places.Place;
@@ -45,6 +53,7 @@ import static com.teamone.ray.homeworkreminder.Data.db;
  */
 public class HomeActivity extends AppCompatActivity {
 
+    private Boolean FIRST_LAUNCH = null;
     private final static int PERMISSION_REQUEST_CODE = 1;
     private final static int ITEM_DATA_RESULT = 3;
     private final static int PLACE_DATA_REQUEST = 1;
@@ -53,12 +62,18 @@ public class HomeActivity extends AppCompatActivity {
     private final static int TIME_LIMIT = 1500;
     private static long timeBackPressed;
     private LatLng lng;
-    //final ArrayList<Items> db = new ArrayList<>();
     private static double home_longitude;
     private static double home_latitude;
 
     ListView listView;
     CustomListAdapter cla;
+    ShowcaseView sv;
+    private Target t_map;
+    private Target t_add;
+    private Target t_mot;
+    private Target t_del;
+
+    private int helper_cnt = 0;
 
     private static final String[] PERMISSIONS_REQUIRED = { Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.SEND_SMS, Manifest.permission.ACCESS_FINE_LOCATION,
@@ -115,7 +130,7 @@ public class HomeActivity extends AppCompatActivity {
     private final Runnable mHideRunnable = new Runnable() {
         @Override
         public void run() {
-            hide();
+           //hide();
         }
     };
     /**
@@ -178,23 +193,104 @@ public class HomeActivity extends AppCompatActivity {
                 modifyData(adapterView, view, i, l);
             }
         });
+
+        t_map = new Target() {
+            @Override
+            public Point getPoint() {
+                Display display = getWindowManager().getDefaultDisplay();
+                Point dis = new Point();
+                display.getSize(dis);
+                int width = dis.x;
+                int height = dis.y;
+                return new Point(width - 100 , height/2 - height/3 - height/15 - 44);
+            }
+        };
+        t_del = new Target() {
+            @Override
+            public Point getPoint() {
+                Display display = getWindowManager().getDefaultDisplay();
+                Point dis = new Point();
+                display.getSize(dis);
+                int width = dis.x;
+                int height = dis.y;
+                return new Point(width - 100 , height/2 - height/3);
+            }
+        };
+
+        t_add = new ViewTarget(R.id.dummy_button, this);
+        t_mot = new ViewTarget(R.id.listView, this);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
+        params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
+        sv = new ShowcaseView.Builder(this)
+                .withHoloShowcase()
+                .setTarget(Target.NONE)
+                .setContentTitle("Access Permissions")
+                .setContentText("Access all permissions below ")
+                .build();
+        sv.setButtonPosition(params);
+        sv.setButtonText("Continue");
+        sv.overrideButtonClick(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showCaseOnClick(v);
+            }
+        });
+
+        sv.hide();
+
+        if (isFirstLaunch()) {
+            helper();
+        }
+
         if (lng != null)
             Log.d("Home Location", lng.toString());
         checkPermissions();
-        if (db.size() > 1) {
-            cla.notifyDataSetChanged();
-        }
+
+
     }
 
-    private void pickPlace(View view) {
-        PlacePicker.IntentBuilder picker = new PlacePicker.IntentBuilder();
-        try {
-            Intent intent = picker.build(this);
-            startActivityForResult(intent, PLACE_DATA_REQUEST);
-        } catch (GooglePlayServicesRepairableException e) {
-            e.printStackTrace();
-        } catch (GooglePlayServicesNotAvailableException e) {
-            e.printStackTrace();
+    private void helper() {
+
+        show();
+        sv.show();
+    }
+
+
+    private void showCaseOnClick(View view) {
+        switch (helper_cnt){
+            case 0:
+                sv.setShowcase(t_map, true);
+                sv.setContentTitle("Home Location");
+                sv.setContentText("Set you home location by clicking the button on the top-right corner");
+                helper_cnt++;
+                break;
+            case 1:
+                sv.setShowcase(t_mot, true);
+                sv.setContentTitle("Modify Assignment");
+                sv.setContentText("Click item to modify assignment");
+                helper_cnt++;
+                break;
+            case 2:
+                sv.setShowcase(t_del, true);
+                sv.setContentTitle("Delete Assignment");
+                sv.setContentText("Click Delete Button to delete assignment");
+                helper_cnt++;
+            case 3:
+                sv.setShowcase(t_add, true);
+                sv.setContentTitle("Add Assignment");
+                sv.setContentText("Click the add button to add new assignment");
+                sv.setButtonText("Done");
+                helper_cnt++;
+                break;
+            case 4:
+                sv.hide();
+                sv.setButtonText("Continue");
+                sv.setShowcase(Target.NONE, true);
+                sv.setContentTitle("Access Permissions");
+                sv.setContentText("Access all permissions below ");
+                helper_cnt = 0;
+                break;
         }
     }
 
@@ -216,6 +312,18 @@ public class HomeActivity extends AppCompatActivity {
         startActivityForResult(intent, ITEM_DATA_REQUEST);
     }
 
+    private boolean isFirstLaunch() {
+        if (FIRST_LAUNCH == null) {
+            SharedPreferences sp = this.getSharedPreferences("first_time", Context.MODE_PRIVATE);
+            FIRST_LAUNCH = sp.getBoolean("firstTime", true);
+            if (FIRST_LAUNCH) {
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putBoolean("firstTime", false);
+                editor.commit();
+            }
+        }
+        return FIRST_LAUNCH;
+    }
 
 
     /**
@@ -276,6 +384,9 @@ public class HomeActivity extends AppCompatActivity {
                 } catch (GooglePlayServicesNotAvailableException e) {
                     e.printStackTrace();
                 }
+            case R.id.helper:
+                helper();
+                return true;
 
         }
         return false;

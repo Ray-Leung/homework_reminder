@@ -29,5 +29,6 @@ dependencies {
     compile 'com.android.support:multidex:1.0.0'
     compile 'com.google.android.gms:play-services-maps:9.4.0'
     compile 'com.google.android.gms:play-services:10.2.1'
+    compile 'com.github.amlcurran.showcaseview:library:5.4.3'
     testCompile 'junit:junit:4.12'
 }

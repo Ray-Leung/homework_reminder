@@ -49,9 +49,14 @@ public class Data {
         Context context = activity.getApplicationContext();
         try(OutputStreamWriter bw = new OutputStreamWriter(context.openFileOutput(filename,
                 Context.MODE_PRIVATE))) {
-            String res = buildString(db);
-            bw.write(res);
-            bw.close();
+            if (db.get(0).getD_y() == 0) {
+                bw.write("");
+                bw.close();
+            } else {
+                String res = buildString(db);
+                bw.write(res);
+                bw.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
